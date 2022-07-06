@@ -1,7 +1,9 @@
 <h1>Login</h1>
+<!-- This displays the messages that are passed to done(). -->
 <% if (messages.error) { %>
   <%= messages.error %>
 <% } %>
+<!-- This form sends a POST request to the route /login. -->
 <form action="/login" method="POST">
   <div>
     <label for="email">Email</label>

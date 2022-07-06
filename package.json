@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "devStart": "nodemon server.js"
+  },
   "dependencies": {
     "bcrypt": "^5.0.1",
     "dotenv": "^16.0.1",
