@@ -25,6 +25,7 @@ const flash = require('express-flash')
  * to all of the pages on that site.
  */
 const session = require('express-session')
+// method-override allows us to override methods.
 const methodOverride = require('method-override')
 // dotenv allows us to use environment variables.
 require('dotenv').config()
@@ -79,6 +80,20 @@ app.use(session({
 app.use(passport.initialize())
 // This tells our server to persist users across sessions.
 app.use(passport.session())
+/* method-override allows us to override methods. To do this, we have to specify
+ * when to override which methods. Here, we specify a keyword of sorts that we
+ * can add to our URL paths when making POST and GET requests that specifies
+ * 1) that the request being made should be overidden and 2) what the override
+ * should be.
+ * ex. `<form action="/logout?_method=DELETE" method="POST"`
+ * In this example, _method is specifying that this request is being overridden
+ * and that the override will be a DELETE request.
+ * 
+ * Note: We DON'T have to use a DELETE request to log a user out. It is just
+ * better practice to do so b/c we are technically "deleting" or "removing" data
+ * when we clear the session. If we didn't use the DELETE method, we wouldn't
+ * have to use the method-override package or any of this funny stuff.
+ */
 app.use(methodOverride('_method'))
 
 /***** ROUTES *****/
@@ -97,12 +112,19 @@ app.get('/', checkAuthenticated, (req, res) => {
 })
 
 /*Serves the login page, login.ejs.
+ * are logged in, it will prevent them from accessing the page they
+ * requested. If they aren't, they will be permitted to continue with
+ * the request they made.
  */
 app.get('/login', checkNotAuthenticated, (req, res) => {
   res.render('login.ejs')
 })
 
 /* Handles the POST request from the form on the login.ejs page.
+ * checkNotAuthenticated checks if a user is logged in or not. If they
+ * are logged in, it will prevent them from accessing the page they
+ * requested. If they aren't, they will be permitted to continue with
+ * the request they made.
  * passport.authenticate(): This method is authenticating the user when
  * the request is made. 
  * - We are using the 'local' strategy.
@@ -118,6 +140,9 @@ app.post('/login', checkNotAuthenticated, passport.authenticate('local', {
 
 // TODO: Remove this code. It is associated with the Register page which we are not going to incorporate in to GRB.
 /* Serves the Register page, register.ejs.
+ * are logged in, it will prevent them from accessing the page they
+ * requested. If they aren't, they will be permitted to continue with
+ * the request they made.
  */
 app.get('/register', checkNotAuthenticated, (req, res) => {
   res.render('register.ejs')
@@ -125,6 +150,9 @@ app.get('/register', checkNotAuthenticated, (req, res) => {
 
 // TODO: Remove this code. It is associated with the Register page which we are not going to incorporate in to GRB.
 /* Handles the POST request sent from the form on the register.ejs page.
+ * are logged in, it will prevent them from accessing the page they
+ * requested. If they aren't, they will be permitted to continue with
+ * the request they made.
  */
 app.post('/register', checkNotAuthenticated, async (req, res) => {
   try {
@@ -145,10 +173,23 @@ app.post('/register', checkNotAuthenticated, async (req, res) => {
   }
 })
 
-/*
+/* Logs the user out using the .logOut() function that is built
+ * into passport.
+ * Since this is a delete request, we cannot call it directly
+ * from HTML. So, we have to use an HTML form to make a POST
+ * request. But because DELETE requests are not supported by
+ * HTML forms, so we have to find a workaroud. That workaround
+ * is the method-override package. method-override allows us
+ * to override methods. In this case, we will override POST
+ * with DELETE. Thereby allowing us to use a DELETE request.
+ * 
+ *  * Note: We DON'T have to use a DELETE request to log a user out. It is just
+ * better practice to do so b/c we are technically "deleting" or "removing" data
+ * when we clear the session. If we didn't use the DELETE method, we wouldn't
+ * have to use the method-override package or any of this funny stuff.
  */
 app.delete('/logout', (req, res) => {
-  req.logOut()
+  req.logOut() // Clears the session and logs the user out.
   res.redirect('/login')
 })
 
@@ -170,7 +211,10 @@ function checkAuthenticated(req, res, next) {
   res.redirect('/login')
 }
 
-/*
+/* Checks if a user is not authenticated. If they aren't this will allow them to continiue with the
+ * request that they made to the server. If they have been authenticated, they will be
+ * redirected to the site homepage.
+ * This is useful for keeping users from accessing the login page after they have logged in.
  */
 function checkNotAuthenticated(req, res, next) {
   if (req.isAuthenticated()) {
